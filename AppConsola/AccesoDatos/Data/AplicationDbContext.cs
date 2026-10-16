@@ -16,7 +16,17 @@ namespace AccesoDatos.Data
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlite("Data Source=C:\\databases\\exampleDB.db");
+            string carpeta = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "VideoclubAlemaniBaigorria"
+            );
+
+            Directory.CreateDirectory(carpeta);
+
+            string rutaBD = Path.Combine(carpeta, "videoclub.db");
+
+            optionsBuilder.UseSqlite($"Data Source={rutaBD}");
         }
+
     }
 }

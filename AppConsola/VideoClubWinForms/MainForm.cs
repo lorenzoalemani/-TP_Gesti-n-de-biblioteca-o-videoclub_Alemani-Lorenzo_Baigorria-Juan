@@ -43,13 +43,17 @@ public class MainForm : Form
         var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 52, Padding = new Padding(7) };
         var grid = new DataGridView
         {
-            Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false,
-            AllowUserToDeleteRows = false, SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-            MultiSelect = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            Dock = DockStyle.Fill,
+            ReadOnly = true,
+            AllowUserToAddRows = false,
+            AllowUserToDeleteRows = false,
+            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+            MultiSelect = false,
+            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
             BackgroundColor = SystemColors.Window
         };
         grids[type] = grid;
-        AddButton(bar, "Consultar / Actualizar", () => RefreshAll());
+        AddButton(bar, "Consultar", () => ShowConsultation(type, title));
         if (type != typeof(Devolucion) && type != typeof(Alquiler))
         {
             AddButton(bar, "Alta", () => EditEntity(type, false));
@@ -81,22 +85,81 @@ public class MainForm : Form
 
     private void RefreshAll()
     {
+        foreach (var type in grids.Keys)
+            RefreshEntity(type);
+    }
+
+    private void RefreshEntity(Type type)
+    {
         using var db = new AplicationDbContext();
-        foreach (var (type, grid) in grids)
+        IEnumerable<object> entities = type == typeof(Socio) ? db.Socio.AsNoTracking().Cast<object>().ToList()
+            : type == typeof(Pelicula) ? db.Pelicula.AsNoTracking().Cast<object>().ToList()
+            : type == typeof(Proveedor) ? db.Proveedor.AsNoTracking().Cast<object>().ToList()
+            : type == typeof(Promociones) ? db.Promociones.AsNoTracking().Cast<object>().ToList()
+            : type == typeof(Alquiler) ? db.Alquiler.AsNoTracking().Cast<object>().ToList()
+            : db.Devolucion.AsNoTracking().Cast<object>().ToList();
+
+        var props = columns[type].Select(n => type.GetProperty(n)
+            ?? throw new InvalidOperationException($"La propiedad {n} no existe en {type.Name}.")).ToArray();
+        var table = new System.Data.DataTable();
+        foreach (var prop in props)
+            table.Columns.Add(prop.Name);
+
+        foreach (var entity in entities)
+            table.Rows.Add(props.Select(p => p.GetValue(entity)?.ToString() ?? "").ToArray());
+
+        grids[type].DataSource = table;
+    }
+
+    private void ShowConsultation(Type type, string title)
+    {
+        // Consultamos los datos actuales antes de abrir la ventana.
+        RefreshEntity(type);
+        var source = (System.Data.DataTable)grids[type].DataSource!;
+
+        using var dialog = new Form
         {
-            IEnumerable<object> entities = type == typeof(Socio) ? db.Socio.AsNoTracking().Cast<object>().ToList()
-                : type == typeof(Pelicula) ? db.Pelicula.AsNoTracking().Cast<object>().ToList()
-                : type == typeof(Proveedor) ? db.Proveedor.AsNoTracking().Cast<object>().ToList()
-                : type == typeof(Promociones) ? db.Promociones.AsNoTracking().Cast<object>().ToList()
-                : type == typeof(Alquiler) ? db.Alquiler.AsNoTracking().Cast<object>().ToList()
-                : db.Devolucion.AsNoTracking().Cast<object>().ToList();
-            var props = columns[type].Select(n => type.GetProperty(n)!).ToArray();
-            var table = new System.Data.DataTable();
-            foreach (var prop in props) table.Columns.Add(prop.Name);
-            foreach (var entity in entities)
-                table.Rows.Add(props.Select(p => p.GetValue(entity)?.ToString() ?? "").ToArray());
-            grid.DataSource = table;
-        }
+            Text = $"Consultar {title}",
+            Width = 900,
+            Height = 550,
+            MinimumSize = new Size(650, 400),
+            StartPosition = FormStartPosition.CenterParent
+        };
+
+        var consultationGrid = new DataGridView
+        {
+            Dock = DockStyle.Fill,
+            ReadOnly = true,
+            AllowUserToAddRows = false,
+            AllowUserToDeleteRows = false,
+            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            BackgroundColor = SystemColors.Window,
+            DataSource = source.Copy()
+        };
+
+        var footer = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 48,
+            Padding = new Padding(10),
+            FlowDirection = FlowDirection.RightToLeft
+        };
+        var closeButton = new Button { Text = "Cerrar", Width = 100, Height = 28 };
+        closeButton.Click += (_, _) => dialog.Close();
+        footer.Controls.Add(closeButton);
+        footer.Controls.Add(new Label
+        {
+            Text = source.Rows.Count == 0
+                ? "No hay registros para mostrar."
+                : $"Registros encontrados: {source.Rows.Count}",
+            AutoSize = true,
+            Padding = new Padding(8, 5, 12, 0)
+        });
+
+        dialog.Controls.Add(consultationGrid);
+        dialog.Controls.Add(footer);
+        dialog.ShowDialog(this);
     }
 
     private int? SelectedId(Type type)
@@ -198,10 +261,15 @@ public class MainForm : Form
                 var promotion = promoId == 0 ? null : db.Promociones.Find(promoId);
                 var total = amount.Value;
                 if (promotion != null) total -= total * promotion.Descuento / 100;
-                db.Alquiler.Add(new Alquiler {
+                db.Alquiler.Add(new Alquiler
+                {
                     Socioid = ((Choice)socio.SelectedItem!).Id,
-                    Fechaentrega = DateTime.Now, Fechadevolucion = DateTime.Now.AddDays(7),
-                    listapeliculas = selected, Monto = total, Estado = "Activo", Promocion = promotion
+                    Fechaentrega = DateTime.Now,
+                    Fechadevolucion = DateTime.Now.AddDays(7),
+                    listapeliculas = selected,
+                    Monto = total,
+                    Estado = "Activo",
+                    Promocion = promotion
                 });
                 db.SaveChanges(); form.DialogResult = DialogResult.OK; form.Close();
             }

@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0-windows</TargetFramework><UseWindowsForms>true</UseWindowsForms><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup><ItemGroup>
+  <ProjectReference Include="..\..\..\..\..\..\..\source\repos\-TP_Gesti-n-de-biblioteca-o-videoclub_Alemani-Lorenzo_Baigorria-Juan\AppConsola\AccesoDatos\AccesoDatos.csproj" />
+</ItemGroup></Project>

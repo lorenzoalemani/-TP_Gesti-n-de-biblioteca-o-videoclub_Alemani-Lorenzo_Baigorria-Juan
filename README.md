@@ -47,7 +47,7 @@ Este sistema está diseñado para la **Gestión  de unVideoclub**, para el contr
 2. **Reporte de Películas Más Alquiladas (Top 10):** Ranking de los títulos más populares.
 3. **Reporte de Promociones Más Utilizadas:** Métricas sobre cuántas veces se aplicó cada promoción.
 4. **Reporte de Compras/Stock por Proveedor:** Balance de películas adquiridas a cada proveedor, stock actual provisto y costos de adquisición.
-5. **Reporte de Historial por Usuario:** Detalle de alquileres realizados, devoluciones a tiempo y promociones aprovechadas por un cliente específico.
+5. **Reporte de Historial por Usuario:** Detalle de alquileres realizados y  devoluciones a tiempo.
 
 ---
 

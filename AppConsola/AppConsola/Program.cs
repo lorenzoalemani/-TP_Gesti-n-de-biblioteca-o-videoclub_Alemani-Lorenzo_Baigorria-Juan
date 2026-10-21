@@ -3,11 +3,11 @@ using AccesoDatos.Repositories;
 
 // 1. Instanciamos el repositorio.
 
-IGenericRepository<Socio> socioRepository = new GenericRepository<Socio>();
-IGenericRepository<Pelicula> peliculaRepository = new GenericRepository<Pelicula>();
-IGenericRepository<Alquiler> alquilerRepository = new GenericRepository<Alquiler>();
-IGenericRepository<Proveedor> proveedorRepository = new GenericRepository<Proveedor>();
-IGenericRepository<Promociones> promocionesRepository = new GenericRepository<Promociones>();
+SocioRepository socioRepository = new SocioRepository();
+PeliculaRepository peliculaRepository = new PeliculaRepository();
+AlquilerRepository alquilerRepository = new AlquilerRepository();
+ProveedorRepository proveedorRepository = new ProveedorRepository();
+PromocionesRepository promocionesRepository = new PromocionesRepository();
 IGenericRepository<Devolucion> devolucionRepository = new GenericRepository<Devolucion>();
 
 bool continuar = true;
@@ -56,6 +56,13 @@ while (continuar)
     Console.WriteLine("18. Consultar alquileres");
     Console.WriteLine("19. Consultar devoluciones");
     Console.WriteLine("20. Consultar promociones");
+    Console.WriteLine();
+    Console.WriteLine("----- REPORTES -----");
+    Console.WriteLine("21. Alquileres activos y vencidos");
+    Console.WriteLine("22. Top 10 películas más alquiladas");
+    Console.WriteLine("23. Promociones más utilizadas");
+    Console.WriteLine("24. Stock por proveedor");
+    Console.WriteLine("25. Historial por usuario");
     Console.WriteLine();
     Console.WriteLine("0. Salir");
     Console.WriteLine();
@@ -140,6 +147,21 @@ while (continuar)
             break;
         case "20":
             MostrarConsulta("PROMOCIONES", promocionesRepository.ObtenerTodos());
+            break;
+        case "21":
+            alquilerRepository.ReporteAlquileresActivosYVencidos();
+            break;
+        case "22":
+            peliculaRepository.ReportePeliculasMasAlquiladas();
+            break;
+        case "23":
+            promocionesRepository.ReportePromocionesMasUtilizadas();
+            break;
+        case "24":
+            proveedorRepository.ReporteStockPorProveedor();
+            break;
+        case "25":
+            socioRepository.ReporteHistorialPorUsuario();
             break;
 
         case "0":
@@ -600,30 +622,48 @@ while (continuar)
     }
     void RegistrarDevolucion()
     {
-        var listaalquileres = alquilerRepository.ObtenerTodos();
+        var listaalquileres = alquilerRepository.ObtenerTodos()
+            .Where(a => a.Estado == "Activo")
+            .ToList();
+
         foreach (var a in listaalquileres)
         {
-            Console.WriteLine($"ID :{a.Id} ||| SOCIO ID:{a.Socioid} ||| FECHA ENTREGA: {a.Fechaentrega}");
+            Console.WriteLine($"ID: {a.Id} | Socio: {a.Socioid} | Entrega: {a.Fechaentrega:dd/MM/yyyy}");
         }
-        Console.WriteLine("ingrese el id del alquiler que quiere devolver");
+
+        Console.Write("Ingrese el ID del alquiler a devolver: ");
         int id = int.Parse(Console.ReadLine());
+
         var alquiler = alquilerRepository.ObtenerPorId(id);
-        if (alquiler != null)
+
+        if (alquiler == null || alquiler.Estado != "Activo")
         {
-            foreach (var p in alquiler.listapeliculas)
-            {
-                p.Cantidad++;
-                peliculaRepository.Modificar(p);
-            }
-            alquiler.Fechadevolucion = DateTime.Now;
-            alquiler.Estado = "Devuelto";
-            alquilerRepository.Modificar(alquiler);
-            Console.WriteLine("devolucion registrada exitosamente");
+            Console.WriteLine("Alquiler no encontrado o ya fue devuelto.");
+            return;
         }
-        else
+
+        // Devolver películas al stock
+        foreach (var p in alquiler.listapeliculas)
         {
-            Console.WriteLine("No se encontró ningún alquiler con ese ID.");
+            p.Cantidad++;
+            p.Disponible = true;
+            peliculaRepository.Modificar(p);
         }
+
+        // Actualizar el alquiler
+        alquiler.Estado = "Devuelto";
+        alquilerRepository.Modificar(alquiler);
+
+        // Crear el registro de Devolucion
+        var nuevaDevolucion = new Devolucion
+        {
+            AlquilerId = alquiler.Id,
+            FechaDevolucion = DateTime.Now
+        };
+
+        devolucionRepository.Agregar(nuevaDevolucion);
+
+        Console.WriteLine("Devolución registrada exitosamente.");
     }
 }
 

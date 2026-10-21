@@ -15,7 +15,7 @@ namespace AccesoDatos.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.13");
 
             modelBuilder.Entity("AccesoDatos.Models.Alquiler", b =>
                 {
@@ -36,7 +36,7 @@ namespace AccesoDatos.Migrations
                     b.Property<decimal>("Monto")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("PromocionId")
+                    b.Property<int?>("PromocionId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Socioid")
@@ -57,14 +57,15 @@ namespace AccesoDatos.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("Descripcion")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("AlquilerId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("FechaDevolucion")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AlquilerId");
 
                     b.ToTable("Devolucion");
                 });
@@ -173,9 +174,7 @@ namespace AccesoDatos.Migrations
                 {
                     b.HasOne("AccesoDatos.Models.Promociones", "Promocion")
                         .WithMany()
-                        .HasForeignKey("PromocionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PromocionId");
 
                     b.HasOne("AccesoDatos.Models.Socio", "Socio")
                         .WithMany("Alquileres")
@@ -186,6 +185,17 @@ namespace AccesoDatos.Migrations
                     b.Navigation("Promocion");
 
                     b.Navigation("Socio");
+                });
+
+            modelBuilder.Entity("AccesoDatos.Models.Devolucion", b =>
+                {
+                    b.HasOne("AccesoDatos.Models.Alquiler", "Alquiler")
+                        .WithMany()
+                        .HasForeignKey("AlquilerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Alquiler");
                 });
 
             modelBuilder.Entity("AccesoDatos.Models.Pelicula", b =>

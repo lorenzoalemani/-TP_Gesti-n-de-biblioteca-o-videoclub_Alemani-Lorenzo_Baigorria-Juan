@@ -15,6 +15,7 @@ namespace AccesoDatos.Models
         public Socio Socio { get; set; }
         public string Estado { get; set; }
         public Promociones Promocion { get; set; }
+        public int? PromocionId { get; set; }
 
 
     }

@@ -18,7 +18,7 @@ public class MainForm : Form
         [typeof(Proveedor)] = new[] { "Id", "Nombre", "Direccion" },
         [typeof(Promociones)] = new[] { "Id", "Nombre", "Descuento", "Activa" },
         [typeof(Alquiler)] = new[] { "Id", "Socioid", "Fechaentrega", "Fechadevolucion", "Monto", "Estado" },
-        [typeof(Devolucion)] = new[] { "Id", "FechaDevolucion", "Descripcion" }
+        [typeof(Devolucion)] = new[] { "Id", "FechaDevolucion", "AlquilerId" }
     };
 
     public MainForm()
@@ -26,13 +26,21 @@ public class MainForm : Form
         Text = "Gestión de Videoclub - Alemani / Baigorria";
         Width = 1150; Height = 740; StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(850, 550);
+
         foreach (var (type, title) in new (Type, string)[]
         {
-            (typeof(Socio),"Socios"), (typeof(Pelicula),"Películas"),
-            (typeof(Proveedor),"Proveedores"), (typeof(Promociones),"Promociones"),
-            (typeof(Alquiler),"Alquileres"), (typeof(Devolucion),"Devoluciones")
+            (typeof(Socio), "Socios"),
+            (typeof(Pelicula), "Películas"),
+            (typeof(Proveedor), "Proveedores"),
+            (typeof(Promociones), "Promociones"),
+            (typeof(Alquiler), "Alquileres"),
+            (typeof(Devolucion), "Devoluciones")
         })
+        {
             AddTab(type, title);
+        }
+
+        AddReportsTab(); // <-- Pestaña de reportes integrada
         Controls.Add(tabs);
         RefreshAll();
     }
@@ -67,6 +75,198 @@ public class MainForm : Form
         }
         if (type == typeof(Devolucion))
             AddButton(bar, "Registrar devolución", RegisterReturn);
+        page.Controls.Add(grid);
+        page.Controls.Add(bar);
+        tabs.TabPages.Add(page);
+    }
+
+    private void AddReportsTab()
+    {
+        var page = new TabPage("Reportes");
+        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 52, Padding = new Padding(7) };
+
+        var grid = new DataGridView
+        {
+            Dock = DockStyle.Fill,
+            ReadOnly = true,
+            AllowUserToAddRows = false,
+            AllowUserToDeleteRows = false,
+            SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+            MultiSelect = false,
+            AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
+            BackgroundColor = SystemColors.Window
+        };
+
+        var comboReportes = new ComboBox { Width = 280, DropDownStyle = ComboBoxStyle.DropDownList };
+        comboReportes.Items.AddRange(new object[] {
+            "1. Alquileres Activos y Vencidos",
+            "2. Top 10 Películas Más Alquiladas",
+            "3. Promociones Más Utilizadas",
+            "4. Stock por Proveedor",
+            "5. Historial por Socio"
+        });
+        comboReportes.SelectedIndex = 0;
+
+        bar.Controls.Add(new Label { Text = "Seleccionar Reporte:", AutoSize = true, Padding = new Padding(0, 8, 0, 0) });
+        bar.Controls.Add(comboReportes);
+
+        var btnGenerar = new Button { Text = "Generar Reporte", AutoSize = true, Height = 28 };
+        btnGenerar.Click += (_, _) =>
+        {
+            try
+            {
+                using var db = new AplicationDbContext();
+                var table = new System.Data.DataTable();
+
+                switch (comboReportes.SelectedIndex)
+                {
+                    case 0: // Alquileres Activos y Vencidos
+                        {
+                            table.Columns.Add("AlquilerId");
+                            table.Columns.Add("Socio");
+                            table.Columns.Add("DNI");
+                            table.Columns.Add("Fecha Entrega");
+                            table.Columns.Add("Vencimiento");
+                            table.Columns.Add("Estado");
+                            table.Columns.Add("Monto");
+                            table.Columns.Add("Situación");
+
+                            var list = (from a in db.Alquiler
+                                        join s in db.Socio on a.Socioid equals s.Id
+                                        where a.Estado == "Activo" || a.Estado == "Alquilado" || a.Fechadevolucion < DateTime.Now
+                                        orderby a.Fechadevolucion
+                                        select new { a, s }).ToList();
+
+                            foreach (var item in list)
+                            {
+                                string situacion = item.a.Fechadevolucion < DateTime.Now && item.a.Estado != "Devuelto" ? "VENCIDO" : "ACTIVO";
+                                table.Rows.Add(
+                                    item.a.Id,
+                                    $"{item.s.Nombre} {item.s.Apellido}",
+                                    item.s.Dni,
+                                    item.a.Fechaentrega.ToShortDateString(),
+                                    item.a.Fechadevolucion.ToShortDateString(),
+                                    item.a.Estado,
+                                    item.a.Monto,
+                                    situacion
+                                );
+                            }
+                        }
+                        break;
+                    case 1: // Top 10 Películas Más Alquiladas
+                        {
+                            table.Columns.Add("Título");
+                            table.Columns.Add("Autor");
+                            table.Columns.Add("Veces Alquilada");
+
+                            var list = db.Alquiler
+                                .Include(a => a.listapeliculas)
+                                .SelectMany(a => a.listapeliculas)
+                                .GroupBy(p => new { p.Titulo, p.Autor })
+                                .Select(g => new { g.Key.Titulo, g.Key.Autor, Count = g.Count() })
+                                .OrderByDescending(x => x.Count)
+                                .Take(10)
+                                .ToList();
+
+                            foreach (var item in list)
+                            {
+                                table.Rows.Add(item.Titulo, item.Autor, item.Count);
+                            }
+                        }
+                        break;
+                    case 2: // Promociones Más Utilizadas
+                        {
+                            table.Columns.Add("Id");
+                            table.Columns.Add("Nombre");
+                            table.Columns.Add("Descuento (%)");
+                            table.Columns.Add("Activa");
+                            table.Columns.Add("Veces Usada");
+                            table.Columns.Add("Monto Total Generado");
+
+                            var queryPromo = from pr in db.Promociones
+                                             join a in db.Alquiler on pr.Id equals a.PromocionId into gj
+                                             select new
+                                             {
+                                                 pr.Id,
+                                                 pr.Nombre,
+                                                 pr.Descuento,
+                                                 pr.Activa,
+                                                 VecesUsada = gj.Count(),
+                                                 MontoTotal = gj.Sum(x => (decimal?)x.Monto) ?? 0
+                                             };
+
+                            foreach (var item in queryPromo.OrderByDescending(x => x.VecesUsada))
+                            {
+                                table.Rows.Add(item.Id, item.Nombre, item.Descuento, item.Activa ? "Sí" : "No", item.VecesUsada, item.MontoTotal);
+                            }
+                        }
+                        break;
+                    case 3: // Stock por Proveedor
+                        {
+                            table.Columns.Add("ProveedorId");
+                            table.Columns.Add("Proveedor");
+                            table.Columns.Add("Dirección");
+                            table.Columns.Add("Cantidad Títulos");
+                            table.Columns.Add("Stock Total");
+                            table.Columns.Add("Stock Disponible");
+
+                            var proveedores = db.Proveedor.ToList();
+                            foreach (var pv in proveedores)
+                            {
+                                table.Rows.Add(pv.Id, pv.Nombre, pv.Direccion, 0, 0, 0);
+                            }
+                        }
+                        break;
+                    case 4: // Historial por Socio
+                        {
+                            table.Columns.Add("SocioId");
+                            table.Columns.Add("Socio");
+                            table.Columns.Add("DNI");
+                            table.Columns.Add("AlquilerId");
+                            table.Columns.Add("Fecha Entrega");
+                            table.Columns.Add("Fecha Prevista");
+                            table.Columns.Add("Estado");
+                            table.Columns.Add("Monto");
+                            table.Columns.Add("Cumplimiento");
+
+                            var queryHist = from s in db.Socio
+                                            join a in db.Alquiler on s.Id equals a.Socioid
+                                            orderby s.Apellido, s.Nombre, a.Fechaentrega descending
+                                            select new { s, a };
+
+                            foreach (var item in queryHist)
+                            {
+                                string cumplimiento;
+                                if (item.a.Estado == "Devuelto" && item.a.Fechadevolucion >= DateTime.Now) cumplimiento = "A tiempo";
+                                else if (item.a.Estado == "Devuelto") cumplimiento = "Con atraso";
+                                else if (item.a.Fechadevolucion < DateTime.Now) cumplimiento = "Vencido (no devuelto)";
+                                else cumplimiento = "En curso";
+
+                                table.Rows.Add(
+                                    item.s.Id,
+                                    $"{item.s.Nombre} {item.s.Apellido}",
+                                    item.s.Dni,
+                                    item.a.Id,
+                                    item.a.Fechaentrega.ToShortDateString(),
+                                    item.a.Fechadevolucion.ToShortDateString(),
+                                    item.a.Estado,
+                                    item.a.Monto,
+                                    cumplimiento
+                                );
+                            }
+                        }
+                        break;
+                }
+
+                grid.DataSource = table;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.GetBaseException().Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        };
+
+        bar.Controls.Add(btnGenerar);
         page.Controls.Add(grid);
         page.Controls.Add(bar);
         tabs.TabPages.Add(page);
@@ -113,7 +313,6 @@ public class MainForm : Form
 
     private void ShowConsultation(Type type, string title)
     {
-        // Consultamos los datos actuales antes de abrir la ventana.
         RefreshEntity(type);
         var source = (System.Data.DataTable)grids[type].DataSource!;
 
@@ -301,7 +500,7 @@ public class MainForm : Form
                 foreach (var p in rental.listapeliculas) p.Cantidad++;
                 rental.Estado = "Devuelto";
                 rental.Fechadevolucion = DateTime.Now;
-                db.Devolucion.Add(new Devolucion { FechaDevolucion = DateTime.Now, Descripcion = $"Alquiler {id}: {description.Text.Trim()}" });
+                db.Devolucion.Add(new Devolucion { AlquilerId = id, FechaDevolucion = DateTime.Now });
                 db.SaveChanges(); form.DialogResult = DialogResult.OK; form.Close();
             }
             catch (Exception ex) { MessageBox.Show(ex.GetBaseException().Message); }

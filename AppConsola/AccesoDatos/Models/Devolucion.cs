@@ -8,6 +8,8 @@ namespace AccesoDatos.Models
     {
         public int Id { get; set; }
         public DateTime FechaDevolucion { get; set; }
-        public string Descripcion { get; set; }
+        public int AlquilerId { get; set; }
+        public Alquiler Alquiler { get; set; }
+
     }
 }

@@ -1,0 +1,43 @@
+# Prompts utilizados durante el desarrollo del sistema de videoclub
+
+*Proyecto:* Sistema de Gestión de Videoclub  
+*Tecnologías:* C#, Windows Forms, Entity Framework Core y SQLite.
+
+### Prompt 1 – Análisis del proyecto
+"Analizá la estructura del proyecto actual y verificá las funcionalidades implementadas. Identificá posibles mejoras sin modificar las reglas de negocio ni las operaciones existentes."
+
+### Prompt 2 – Implementación de consultas
+"Revisá el funcionamiento de las consultas del sistema y asegurate de que permitan visualizar los registros de cada entidad de manera organizada, utilizando tablas dentro de Windows Forms."
+
+### Prompt 3 – Modernización de la interfaz gráfica
+"Necesito actualizar el diseño de la aplicación para conseguir una interfaz más moderna, intuitiva y fácil de utilizar, manteniendo la estructura y las funcionalidades del proyecto."
+
+### Prompt 4 – Implementación del menú lateral
+"Desarrollá un menú de navegación lateral que permita acceder fácilmente a las distintas secciones del sistema: socios, películas, proveedores, promociones, alquileres, devoluciones y reportes."
+
+### Prompt 5 – Diseño visual
+"Aplicá una combinación de colores azul y blanco, utilizando una distribución clara de los elementos, títulos destacados y botones que faciliten la navegación."
+
+### Prompt 6 – Pantalla de inicio
+"Incorporá una pantalla principal de bienvenida que funcione como punto de entrada al sistema y permita acceder a las diferentes funcionalidades desde el menú lateral."
+
+### Prompt 7 – Validaciones básicas
+"Implementá validaciones en los formularios para controlar campos obligatorios, valores numéricos incorrectos, cantidades negativas y descuentos fuera de los límites permitidos. Mostrá mensajes claros cuando se detecten errores."
+
+### Prompt 8 – Organización del código
+"Separá las funcionalidades de diseño y validación en clases independientes para mantener el código organizado y facilitar futuras modificaciones."
+
+### Prompt 9 – Corrección de errores de compilación
+"Revisá las referencias entre proyectos y la integración de las clases para asegurar que la solución compile correctamente y conserve su funcionamiento."
+
+### Prompt 10 – Corrección de la base de datos
+"Analizá el error de SQLite relacionado con una columna inexistente y verificá la compatibilidad entre las entidades de Entity Framework Core y la estructura de la base de datos."
+
+### Prompt 11 – Ajustes de la interfaz
+"Revisá la distribución de los controles de la interfaz gráfica y corregí los problemas de visualización, especialmente los textos cortados, elementos superpuestos y espacios insuficientes."
+
+### Prompt 12 – Conservación de funcionalidades
+"Verificá que las modificaciones de la interfaz no afecten las operaciones de alta, baja, modificación y consulta, ni los reportes implementados anteriormente."
+
+### Prompt 13 – Verificación final
+"Comprobá la integración de MainForm.cs, ModernUI.cs y BasicValidation.cs, revisando la compilación, la navegación entre secciones y el comportamiento de los formularios."

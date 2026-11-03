@@ -7,7 +7,7 @@ namespace AccesoDatos.Repositories
 {
     public class PeliculaRepository : GenericRepository<Pelicula>
     {
-        private readonly AplicationDbContext _context = new AplicationDbContext();
+        public PeliculaRepository(AplicationDbContext context) : base(context) { }
 
         public void ReportePeliculasMasAlquiladas()
         {

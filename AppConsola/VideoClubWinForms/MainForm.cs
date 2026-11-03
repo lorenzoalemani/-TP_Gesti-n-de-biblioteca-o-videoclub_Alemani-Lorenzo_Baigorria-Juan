@@ -1,5 +1,6 @@
 using AccesoDatos.Data;
 using AccesoDatos.Models;
+using AccesoDatos.Repositories;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Reflection;
@@ -22,10 +23,25 @@ public class MainForm : Form
     };
 
     private readonly Func<AplicationDbContext> _createDbContext;
+    private readonly IGenericRepository<Socio> _socios;
+    private readonly IGenericRepository<Pelicula> _peliculas;
+    private readonly IGenericRepository<Proveedor> _proveedores;
+    private readonly IGenericRepository<Promociones> _promociones;
+    private readonly IGenericRepository<Alquiler> _alquileres;
+    private readonly IGenericRepository<Devolucion> _devoluciones;
 
-    public MainForm(Func<AplicationDbContext> createDbContext)
+    public MainForm(Func<AplicationDbContext> createDbContext,
+        IGenericRepository<Socio> socios, IGenericRepository<Pelicula> peliculas,
+        IGenericRepository<Proveedor> proveedores, IGenericRepository<Promociones> promociones,
+        IGenericRepository<Alquiler> alquileres, IGenericRepository<Devolucion> devoluciones)
     {
         _createDbContext = createDbContext ?? throw new ArgumentNullException(nameof(createDbContext));
+        _socios = socios;
+        _peliculas = peliculas;
+        _proveedores = proveedores;
+        _promociones = promociones;
+        _alquileres = alquileres;
+        _devoluciones = devoluciones;
         Text = "Gestión de Videoclub - Alemani / Baigorria";
         Width = 1150; Height = 740; StartPosition = FormStartPosition.CenterScreen;
         MinimumSize = new Size(850, 550);
@@ -220,13 +236,12 @@ public class MainForm : Form
 
     private void RefreshEntity(Type type)
     {
-        using var db = _createDbContext();
-        IEnumerable<object> entities = type == typeof(Socio) ? db.Socio.AsNoTracking().Cast<object>().ToList()
-            : type == typeof(Pelicula) ? db.Pelicula.AsNoTracking().Cast<object>().ToList()
-            : type == typeof(Proveedor) ? db.Proveedor.AsNoTracking().Cast<object>().ToList()
-            : type == typeof(Promociones) ? db.Promociones.AsNoTracking().Cast<object>().ToList()
-            : type == typeof(Alquiler) ? db.Alquiler.AsNoTracking().Cast<object>().ToList()
-            : db.Devolucion.AsNoTracking().Cast<object>().ToList();
+        IEnumerable<object> entities = type == typeof(Socio) ? _socios.ObtenerTodos().Cast<object>()
+            : type == typeof(Pelicula) ? _peliculas.ObtenerTodos().Cast<object>()
+            : type == typeof(Proveedor) ? _proveedores.ObtenerTodos().Cast<object>()
+            : type == typeof(Promociones) ? _promociones.ObtenerTodos().Cast<object>()
+            : type == typeof(Alquiler) ? _alquileres.ObtenerTodos().Cast<object>()
+            : _devoluciones.ObtenerTodos().Cast<object>();
         var props = columns[type].Select(n => type.GetProperty(n)
             ?? throw new InvalidOperationException($"La propiedad {n} no existe en {type.Name}.")).ToArray();
         var table = new DataTable();

@@ -1,14 +1,16 @@
 ﻿using AccesoDatos.Models;
+using AccesoDatos.Data;
 using AccesoDatos.Repositories;
 
-// 1. Instanciamos el repositorio.
+// 1. Compartimos el contexto inyectado entre los repositorios de esta sesión.
+using var context = new AplicationDbContext();
 
-SocioRepository socioRepository = new SocioRepository();
-PeliculaRepository peliculaRepository = new PeliculaRepository();
-AlquilerRepository alquilerRepository = new AlquilerRepository();
-ProveedorRepository proveedorRepository = new ProveedorRepository();
-PromocionesRepository promocionesRepository = new PromocionesRepository();
-IGenericRepository<Devolucion> devolucionRepository = new GenericRepository<Devolucion>();
+SocioRepository socioRepository = new SocioRepository(context);
+PeliculaRepository peliculaRepository = new PeliculaRepository(context);
+AlquilerRepository alquilerRepository = new AlquilerRepository(context);
+ProveedorRepository proveedorRepository = new ProveedorRepository(context);
+PromocionesRepository promocionesRepository = new PromocionesRepository(context);
+IGenericRepository<Devolucion> devolucionRepository = new GenericRepository<Devolucion>(context);
 
 bool continuar = true;
 

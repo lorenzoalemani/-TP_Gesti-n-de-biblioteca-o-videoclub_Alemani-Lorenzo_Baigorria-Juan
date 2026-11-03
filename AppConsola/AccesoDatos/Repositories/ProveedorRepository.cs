@@ -7,6 +7,8 @@ namespace AccesoDatos.Repositories
 {
     public class ProveedorRepository : GenericRepository<Proveedor>
     {
+        public ProveedorRepository(AplicationDbContext context) : base(context) { }
+
         public void ReporteStockPorProveedor()
         {
             // 1. Traigo todos los proveedores con sus películas

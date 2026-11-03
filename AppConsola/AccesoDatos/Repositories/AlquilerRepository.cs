@@ -6,7 +6,7 @@ namespace AccesoDatos.Repositories
 {
     public class AlquilerRepository : GenericRepository<Alquiler>
     {
-        private readonly AplicationDbContext _context = new AplicationDbContext();
+        public AlquilerRepository(AplicationDbContext context) : base(context) { }
 
         public void ReporteAlquileresActivosYVencidos()
         {

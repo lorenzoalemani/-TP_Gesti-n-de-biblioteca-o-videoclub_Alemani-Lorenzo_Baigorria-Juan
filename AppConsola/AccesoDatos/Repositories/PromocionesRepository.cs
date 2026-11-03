@@ -7,6 +7,8 @@ namespace AccesoDatos.Repositories
 {
     public class PromocionesRepository : GenericRepository<Promociones>
     {
+        public PromocionesRepository(AplicationDbContext context) : base(context) { }
+
         public void ReportePromocionesMasUtilizadas()
         {
             // 1. Traigo todas las promociones

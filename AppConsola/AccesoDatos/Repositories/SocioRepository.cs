@@ -7,6 +7,8 @@ namespace AccesoDatos.Repositories
 {
     public class SocioRepository : GenericRepository<Socio>
     {
+        public SocioRepository(AplicationDbContext context) : base(context) { }
+
         public void ReporteHistorialPorUsuario()
         {
             var alquileres = _context.Alquiler

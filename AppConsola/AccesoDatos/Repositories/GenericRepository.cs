@@ -7,9 +7,9 @@ namespace AccesoDatos.Repositories
     {
         public readonly AplicationDbContext _context;
 
-        public GenericRepository()
+        public GenericRepository(AplicationDbContext context)
         {
-            _context = new AplicationDbContext();
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         // 1. LECTURA (SELECT *)
